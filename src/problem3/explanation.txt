@@ -1,0 +1,98 @@
+Summary of Issues
+---------------------------------------------------------------
+Issue 1: Missing interface definitions
+
+- WalletBalance does not define "blockchain", but the code was using "balance.blockchain".
+- Props extends BoxProps but BoxProps is not imported or defined, while Props is also not declared with any attributes.
+- This cause the code having error.
+
+Solution:
+- Added "blockchain" property to the WalletBalance interface.
+- Removed BoxProps as it is irrelevant in this context.
+
+---------------------------------------------------------------
+Issue 2: Use of "any" in "getPriority"
+
+- Using "any" might allow invalid values silently and increase bugs, and harder to maintain.
+
+Solution:
+- Changed "any" to "string".
+
+---------------------------------------------------------------
+Issue 3: Inverted filtering logic, Inefficient sorting logic, and bugs in "sortedBalances"
+
+- The "lhsPriority" variable is not defined.
+- "if (balance.amount <= 0) {
+    return true;
+  }"
+- This code filters amount lesser than 0 to the returned array.
+- It is believed that the wallet page shall display wallets with balance > 0.
+- "getPriority" is called repeatedly during the sorting process. This causes a lot of unnecessary computations.
+
+Solution: 
+- Replaced "lhsPriority" with "balancePriority".
+- Fixed the filtering logic (refer to the "sortedBalances" in index.tsx page)
+- Enhanced the sorting logic by eliminating the need to make redundant calls of "getPriority" (refer to the "sortedBalances" in index.tsx page)
+
+---------------------------------------------------------------
+Issue 4: Missing type inference usage in array callbacks for "balances" variable
+
+- The original code explicitly types callback parameters like "balance", "lhs", and "rhs" in "filter" and "sort" callbacks.
+- This reduces code readability, and manually typing callback parameters increases maintenance effort if the data shape changes.
+
+Solution:
+- Explicitly typed the "balances" variable as `WalletBalance[]`.
+- Allowed TypeScript to infer the types of "balance", "a", and "b" in callbacks.
+- This makes the code cleaner and easier to read.
+
+---------------------------------------------------------------
+Issue 5: Incorrect useMemo dependencies
+
+-  "}, [balances, prices]);"
+- "prices" is not used inside the memo, so it is believed that "prices" should not trigger the recomputation of "sortedBalances".
+- So, "prices" would cause unncessary recomputation whenever its value changes.
+
+Solution:
+- Removed "prices" from the dependency array of the "sortedBalances" memo.
+
+---------------------------------------------------------------
+Issue 6: Unused computed variable "formattedBalances" & mismatch between data and rendering
+
+- "formattedBalances" is computed but never used for rendering — the rows are still mapped from sortedBalances.
+- "sortedBalances" objects don’t include the formatted property, but the WalletRow component expects formattedAmount.
+
+Solution:
+- Added "formatted" property to WalletBalance interface instead of using a separate FormattedWalletBalance interface. 
+- This avoids extra mapping and makes the data directly renderable. This also reduces computational power needed to define a separate interface.
+- Used the "formattedBalances" array for rendering WalletRow.
+- Using this array would preserve immutability as the original "balance" array is not mutated.
+
+---------------------------------------------------------------
+Issue 7: Using array index as React key for WalletRow component
+
+- Using the array index "(key={index})" can cause rendering issues when the "balances" array is filtered, sorted, or updated dynamically.
+- The wrong component instance may be reused, leading to incorrect data or UI glitches.
+
+Solution:
+- Used a stable and unique property like balance.currency for the key.
+- This allows each WalletRow component being tracked accurately across renders and preserves UI consistency.
+
+---------------------------------------------------------------
+Issue 8: No fallback when price is missing
+
+- "usdValue = prices[balance.currency] * balance.amount" assumes the price always exists.
+- If prices[balance.currency] is undefined, this will result in NaN error and break the display.
+
+Solution: 
+- Add a fallback value of 0 when the price is missing via nullish coalescing.
+
+---------------------------------------------------------------
+Issue 9: Unused "children" prop & Missing "classes" prop
+
+- "children" was defined but never used, adding unnecessary clutter.
+- "classes" was used for WalletRow styling but not declared in Props.
+
+Solution:
+- Removed the unused "children" prop.
+- Added a meaningful "classes" prop to pass CSS class names down to WalletRow instead.
+- This makes the Props interface cleaner and directly relevant to the component's functionality.
