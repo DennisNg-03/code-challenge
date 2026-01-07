@@ -1,0 +1,50 @@
+import { useEffect, useState } from "react";
+import { ThemeProviderContext } from "@/context/ThemeContext";
+import type { ThemeProviderState, Theme } from "@/context/ThemeContext";
+
+type ThemeProviderProps = {
+  children: React.ReactNode;
+  defaultTheme?: Theme;
+  storageKey?: string;
+};
+
+export const ThemeProvider = ({
+  children,
+  defaultTheme = "system",
+  storageKey = "vite-ui-theme",
+  ...props
+}: ThemeProviderProps) => {
+  const [theme, setTheme] = useState<Theme>(
+    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
+  );
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+
+    root.classList.remove("light", "dark");
+
+    if (theme === "system") {
+      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light";
+      root.classList.add(systemTheme);
+      return;
+    }
+
+    root.classList.add(theme);
+  }, [theme]);
+
+  const value: ThemeProviderState = {
+    theme,
+    setTheme: (t: Theme) => {
+      localStorage.setItem(storageKey, t);
+      setTheme(t);
+    },
+  };
+
+  return (
+    <ThemeProviderContext.Provider {...props} value={value}>
+      {children}
+    </ThemeProviderContext.Provider>
+  );
+}
